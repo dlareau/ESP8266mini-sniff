@@ -365,72 +365,11 @@ void promisc_cb(uint8_t *buf, uint16_t len)
 {
   int i = 0;
   uint16_t seq_n_new = 0;
-#ifdef PRINT_RAW_HEADER
-  if (len >= 35) {
-    uint8_t frame_control_pkt = buf[12]; // just after the RxControl Structure
-    uint8_t protocol_version = frame_control_pkt & 0x03; // should always be 0x00
-    uint8_t frame_type = (frame_control_pkt & 0x0C) >> 2;
-    uint8_t frame_subtype = (frame_control_pkt & 0xF0) >> 4;
-    
-    struct control_frame *cf=(struct control_frame *)&buf[12];
-      
-         switch (cf->type) {
-           case 0:
-            switch (cf->subtype) {
-              case 0:
-               print_pkt_header(buf,len,"ASREQ:");
-               break;
-              case 1:
-               print_pkt_header(buf,len,"ASRSP:");
-               break;
-              case 2:
-               print_pkt_header(buf,len,"RSRSP:");
-               break;
-              case 3:
-               print_pkt_header(buf,len,"RSRSP:");
-               break;
-              case 4:
-               print_pkt_header(buf,len,"PRREQ:");
-               break;
-              case 5:
-               print_pkt_header(buf,len,"PRRSP:");
-               break;
-              case 8:
-               print_pkt_header(buf,len,"BECON:");
-               break;
-              case 9:
-               print_pkt_header(buf,len,"ATIM :");
-               break;
-              case 10:
-               print_pkt_header(buf,len,"DASSO:");
-               break;
-              case 11:
-               print_pkt_header(buf,len,"AUTH :");
-               break;
-              case 12:
-               print_pkt_header(buf,len,"DAUTH:");
-               break;
-              case 13:
-               print_pkt_header(buf,len,"ACTON:");
-               break;
-              default:
-               print_pkt_header(buf,len,"MGMT?:");
-               break;
-            };
-            break;
-           case 1:
-             print_pkt_header(buf,len,"CONTR:");
-             break;
-           case 2:
-             print_pkt_header(buf,len,"DATA :");
-             break;
-           default:
-             print_pkt_header(buf,len,"UNKNOW:");
-         }
-    
-  }
-  #endif
 
+  if (len >= 35) { 
+    struct control_frame *cf=(struct control_frame *)&buf[12];
+  }
+  
   if (len == 12) {
     struct RxControl *sniffer = (struct RxControl*) buf;
   } else if (len == 128) {
