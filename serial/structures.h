@@ -2,21 +2,31 @@
 
 #define ETH_MAC_LEN 6
 
+#define PROBE_REQUEST 4
+#define PROBE_RESPONSE 5
+#define BEACON 8
+#define CLIENT 15
+
 uint8_t broadcast1[3] = { 0x01, 0x00, 0x5e };
 uint8_t broadcast2[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 uint8_t broadcast3[3] = { 0x33, 0x33, 0x00 };
 
 struct beaconinfo {
-  uint8_t   bssid[ETH_MAC_LEN];
-  uint8_t   ssid[33];
+  uint8_t   mac_addr[ETH_MAC_LEN];
+  char      ssid[33];
   int       ssid_len;
   int       channel;
   int       err;
   signed    rssi;
-  uint8_t   capa[2];
-  uint32_t  last_heard;
-  uint8_t   reported;
-  uint8_t   header;
+};
+
+struct probeinfo {
+  uint8_t   mac_addr[ETH_MAC_LEN];
+  char      ssid[33];
+  int       ssid_len;
+  int       channel;
+  int       err;
+  signed    rssi;
 };
 
 struct clientinfo {
@@ -26,30 +36,8 @@ struct clientinfo {
   int       channel;
   int       err;
   signed    rssi;
-  uint16_t  seq_n;
-
-  /* rpw additions */
-  uint8_t   header;
-  uint32_t  last_heard;
-  uint8_t   reported;
 };
 
-struct probeinfo {
-  uint8_t   bssid[ETH_MAC_LEN];
-  uint8_t   station[ETH_MAC_LEN];
-  uint8_t   ap[ETH_MAC_LEN];
-  uint8_t   ssid[33];
-  int       ssid_len;
-  int       channel;
-  int       err;
-  signed    rssi;
-  uint16_t  seq_n;
-
-  /* rpw additions */
-  uint8_t   header;
-  uint32_t  last_heard;
-  uint8_t   reported;
-};
 
 /* ==============================================
    Promiscous callback structures, see ESP manual

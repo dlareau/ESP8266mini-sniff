@@ -13,8 +13,8 @@
 #include "functions.h"
 
 
-#define MAX_APS_TRACKED 50
-#define MAX_CLIENTS_TRACKED 100
+#define MAX_APS_TRACKED 100
+#define MAX_CLIENTS_TRACKED 200
 #undef PRINT_RAW_HEADER   // define this to print raw packet headers
 #undef PERIODIC  //define this to get summary of new and expired entries periodically
 
@@ -72,64 +72,6 @@ void loop() {
 
     }
 
-#ifdef PERIODIC    
-    uint32_t now = millis()/1000;
-    if (now >= next_check_time) {
-      Serial.println("Periodic ");
-          
-      for (int u = 0; u < clients_known_count; u++) {
-        
-        if ( !clients_known[u].reported && clients_known[u].last_heard >= last_check_time ) {
-          Serial.print("New ");
-          print_client(clients_known[u]);
-          clients_known[u].reported=1;
-          
-          
-        } else if ( clients_known[u].reported && now > MAX_CLIENT_AGE &&  
-                    clients_known[u].last_heard <= (last_check_time - MAX_CLIENT_AGE) ) {
-          Serial.print("Old ");
-          print_client(clients_known[u]);
-          clients_known[u].reported=0;
-        }; 
-      };
-      for (int u = 0; u < aps_known_count; u++) {
-        if ( !aps_known[u].reported && aps_known[u].err == 0 
-             && aps_known[u].last_heard >= last_check_time ) {
-        
-          Serial.print("New ");
-          print_beacon(aps_known[u]);
-          aps_known[u].reported=1;
-          
-        
-           
-        } else if ( aps_known[u].reported && aps_known[u].err == 0 && now > MAX_CLIENT_AGE &&  
-                    aps_known[u].last_heard <= (last_check_time - MAX_CLIENT_AGE) ) {
-          Serial.print("Old ");
-          print_beacon(aps_known[u]);
-          aps_known[u].reported=0;
-        };
-      };
-      
-      
-      for (int u = 0; u < probes_known_count; u++) {
-      
-        if ( !probes_known[u].reported && probes_known[u].last_heard >= last_check_time ) {
-           Serial.print("New ");
-           print_probe(probes_known[u]);
-           probes_known[u].reported=1;
-          
-        } else if ( probes_known[u].reported && now > MAX_CLIENT_AGE &&  
-                    probes_known[u].last_heard <= (last_check_time - MAX_CLIENT_AGE) ) {
-          Serial.print("Old ");
-          print_probe(probes_known[u]);
-          probes_known[u].reported=0;
-        }; 
-      };
-      
-      last_check_time = now;
-      next_check_time = now + CHECK_INTERVAL;
-    };
-#endif
   }
 
 }
