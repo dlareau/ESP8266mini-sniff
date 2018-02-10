@@ -12,27 +12,21 @@
 
 #include "functions.h"
 
-
-#define MAX_APS_TRACKED 100
-#define MAX_CLIENTS_TRACKED 200
-#undef PRINT_RAW_HEADER   // define this to print raw packet headers
-#undef PERIODIC  //define this to get summary of new and expired entries periodically
-
-beaconinfo aps_known[MAX_APS_TRACKED];                    // Array to save MACs of known APs
-int aps_known_count = 0;                                  // Number of known APs
-int nothing_new = 0;
-clientinfo clients_known[MAX_CLIENTS_TRACKED];            // Array to save MACs of known CLIENTs
-int clients_known_count = 0;                              // Number of known CLIENTs
-probeinfo probes_known[MAX_CLIENTS_TRACKED];            // Array to save MACs of known CLIENTs
-int probes_known_count = 0;
 #define disable 0
 #define enable  1
-#define MAX_CLIENT_AGE 1000  //age before entry is considered old (seconds)
-#define CHECK_INTERVAL 60   // periodic check interval (seconds)
+
+#define MAX_APS_TRACKED 200
+#define MAX_CLIENTS_TRACKED 200
+
+managementInfo aps_known[MAX_APS_TRACKED];                    // Array to save MACs of known APs
+dataInfo clients_known[MAX_CLIENTS_TRACKED];            // Array to save MACs of known CLIENTs
+managementInfo probes_known[MAX_CLIENTS_TRACKED];            // Array to save MACs of known CLIENTs
+int aps_known_count = 0;                                  // Number of known APs
+int clients_known_count = 0;                              // Number of known CLIENTs
+int probes_known_count = 0;
+int nothing_new = 0;
 
 unsigned int channel = 1;
-uint32_t last_check_time, next_check_time;
-
 
 void setup() {
   Serial.begin(57600);
@@ -45,8 +39,6 @@ void setup() {
   wifi_promiscuous_enable(disable);
   wifi_set_promiscuous_rx_cb(promisc_cb);   // Set up promiscuous callback
   wifi_promiscuous_enable(enable);
-  last_check_time = 0;
-  next_check_time = last_check_time + CHECK_INTERVAL;
 
 }
 

@@ -1,10 +1,12 @@
+extern unsigned int channel;
+
 //parse out details of client frame
-struct clientinfo parse_data(struct sniffer_buf *sniffer, uint16_t framelen)
+struct dataInfo parse_data(struct sniffer_buf *sniffer, uint16_t framelen)
 {
   // takes 36 byte frame control frame
-  struct clientinfo ci;
+  struct dataInfo ci;
   uint8_t *frame = sniffer->buf;
-  ci.channel = sniffer->rx_ctrl.channel;
+  ci.channel = channel;
   ci.err = 0;
   ci.rssi = sniffer->rx_ctrl.rssi;
   uint8_t *bssid;
@@ -54,18 +56,16 @@ struct clientinfo parse_data(struct sniffer_buf *sniffer, uint16_t framelen)
 
 
 
-struct beaconinfo parse_beacon(struct sniffer_buf2 *sniffer, uint16_t framelen)
+struct managementInfo parse_ssid_req(struct sniffer_buf2 *sniffer, uint16_t framelen,
+                                      uint8_t ssid_offset)
 {
-  // takes 112 byte beacon frame
-  struct beaconinfo bi;
+  struct managementInfo bi;
   uint8_t *frame = sniffer->buf;
   bi.ssid_len = 0;
-  bi.channel = sniffer->rx_ctrl.channel;
+  bi.channel = channel;
   bi.err = 0;
   bi.rssi = sniffer->rx_ctrl.rssi;
-  int pos = 36;
-  uint8_t frame_type= (frame[0] & 0x0C)>>2;
-  uint8_t frame_subtype= (frame[0] & 0xF0)>>4;
+  int pos = ssid_offset;
   if (frame[pos] == 0x00) {
     bi.ssid_len = (int) frame[pos + 1];
     if (bi.ssid_len == 0) {
@@ -86,43 +86,8 @@ struct beaconinfo parse_beacon(struct sniffer_buf2 *sniffer, uint16_t framelen)
   return bi;
 };
 
-struct probeinfo parse_probe(struct sniffer_buf2 *sniffer, uint16_t framelen)
-{
-  // takes 112 byte probe request frame
-  struct probeinfo pi;
-  uint8_t *frame = sniffer->buf;
-  pi.ssid_len = 0;
-  pi.channel = sniffer->rx_ctrl.channel;
-  pi.err = 0;
-  pi.rssi = sniffer->rx_ctrl.rssi;
-  int pos = 24;
-  uint8_t frame_type= (frame[0] & 0x0C)>>2;
-  uint8_t frame_subtype= (frame[0] & 0xF0)>>4;
-   
-  if (frame[pos] == 0x00) {
-    pi.ssid_len = (int) frame[pos + 1];
-    if (pi.ssid_len == 0) {
-      memset(pi.ssid, '\x00', 33);
-    }
-    if (pi.ssid_len < 0) {
-      pi.err = -1;
-    }
-    if (pi.ssid_len > 32) {
-      pi.err = -2;
-    }
-    memset(pi.ssid, '\x00', 33);
-    memcpy(pi.ssid, frame + pos + 2, pi.ssid_len);
-    pi.err = 0;  // before was error??
-  } else {
-    pi.err = -3;
-  }
 
-  memcpy(pi.mac_addr, frame+10, ETH_MAC_LEN);
-  return pi;
-}
-
-
-int register_beacon(beaconinfo beacon)
+int register_beacon(managementInfo beacon)
 {
   // add beacon to list if not already included
   int known = 0;   // Clear known flag
@@ -147,7 +112,7 @@ int register_beacon(beaconinfo beacon)
   return known;
 }
 
-int register_client(clientinfo ci)
+int register_client(dataInfo ci)
 {
   // add client to list if not already included
   int known = 0;   // Clear known flag
@@ -173,7 +138,7 @@ int register_client(clientinfo ci)
   return known;
 }
 
-int register_probe(probeinfo pi)
+int register_probe(managementInfo pi)
 {
   //add probe to list if not already included.
   int known = 0;   // Clear known flag
@@ -199,7 +164,7 @@ int register_probe(probeinfo pi)
   return known;
 }
 
-void print_beacon(beaconinfo beacon)
+void print_beacon(managementInfo beacon)
 {
   uint64_t now = millis()/1000;
   if (beacon.err != 0) {
@@ -213,7 +178,7 @@ void print_beacon(beaconinfo beacon)
   }
 }
 
-void print_client(clientinfo ci)
+void print_client(dataInfo ci)
 {
   int u = 0;
   int known = 0;   // Clear known flag
@@ -244,7 +209,7 @@ void print_client(clientinfo ci)
   }
 }
 
-void print_probe(probeinfo pi)
+void print_probe(managementInfo pi)
 {
   int u = 0;
   int known = 0;   // Clear known flag
@@ -269,14 +234,11 @@ void print_pkt_header(uint8_t *buf, uint16_t len, char *pkt_type)
   char ssid_name[33];
   memset(ssid_name, '\x00', 33);
   Serial.printf("%s", pkt_type);
-  uint8_t frame_control_pkt = buf[12]; // just after the RxControl Structure
-  uint8_t protocol_version = frame_control_pkt & 0x03; // should always be 0x00
-  uint8_t frame_type = (frame_control_pkt & 0x0C) >> 2;
-  uint8_t frame_subtype = (frame_control_pkt & 0xF0) >> 4;
+  struct control_frame *cf=(struct control_frame *)&buf[12];
   uint8_t ds= buf[13] & 0x3;
   
   // print the 3 MAC-address fields
-  Serial.printf("%02x %02x %02x ", frame_type, frame_subtype, ds);
+  Serial.printf("%02x %02x %02x ", cf->type, cf->subtype, ds);
   if (len<35) {
     Serial.printf("Short Packet!! %d\r\n",len);
     return;
@@ -291,28 +253,6 @@ void print_pkt_header(uint8_t *buf, uint16_t len, char *pkt_type)
   Serial.print(" ");
   for (int n = 28; n < 34; n++) {
     Serial.printf("%02x", buf[n]);
-  };
-  //ACTION frames are 112 long but contain nothing useful
-  if (len>=112 && !( frame_type==0 && frame_subtype==13)) {
-    
-    int pos=49;
-    if (frame_type==0 && frame_subtype==4) {
-      pos=37; // probe request frames
-    }
-    
-    int bssid_len=(int) buf[pos];
-    if(bssid_len<0 || bssid_len>32) {
-      Serial.printf(" Bad ssid len %d!!\r\n",bssid_len);
-      return;
-    };
-    if (bssid_len==0) {
-      Serial.print(" <open>");
-    } else {
-      memcpy(ssid_name,&(buf[pos+1]),bssid_len);
-      Serial.printf(" %s",ssid_name);
-    };
-    Serial.printf(":%d %d %d ",(int)buf[pos+bssid_len+1],(int)buf[pos+bssid_len+2],(int)buf[pos+bssid_len+3]);
-  
   };
   Serial.print("\r\n");
 }
@@ -329,31 +269,31 @@ void promisc_cb(uint8_t *buf, uint16_t len)
     struct sniffer_buf2 *sniffer = (struct sniffer_buf2*) buf;
 
     if (cf->type == 0 && (cf->subtype == 8 || cf->subtype == 5)) {
-      struct beaconinfo beacon = parse_beacon(sniffer, 112);
+      struct managementInfo beacon = parse_ssid_req(sniffer, 112, 36);
 
       if (register_beacon(beacon) == 0) {
         print_beacon(beacon);
         nothing_new = 0;
       }
     } else if (cf->type ==0 && cf->subtype==4) {
-      struct probeinfo probe = parse_probe(sniffer, 112);
+      struct managementInfo probe = parse_ssid_req(sniffer, 112, 24);
 
       if (register_probe(probe) == 0) {
-        print_probe(probe);
         nothing_new = 0;
       }
+      print_probe(probe);
     } else {
       print_pkt_header(buf,112,"UKNOWN:");
     }
   } else {
     struct sniffer_buf *sniffer = (struct sniffer_buf*) buf;
-    struct clientinfo ci = parse_data(sniffer, 36);
+    struct dataInfo ci = parse_data(sniffer, 36);
 
-    if (!(cf->type == 1 && (cf->subtype==9 || cf->subtype==8))){
+    if (cf->type == 2) {
       if (register_client(ci) == 0) {
-        print_client(ci);
         nothing_new = 0;
       }
+      print_client(ci);
     }
   }
 }

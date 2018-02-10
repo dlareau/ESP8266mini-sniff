@@ -8,17 +8,17 @@ extern "C" {
 }
 
 #include "structures.h"
-struct clientinfo parse_data(uint8_t *frame, uint16_t framelen, signed rssi, unsigned channel);
-struct beaconinfo parse_beacon(uint8_t *frame, uint16_t framelen, signed rssi);
-struct probeinfo parse_probe(uint8_t *frame, uint16_t framelen, signed rssi);
+struct dataInfo parse_data(uint8_t *frame, uint16_t framelen, signed rssi, unsigned channel);
+struct managementInfo parse_beacon(uint8_t *frame, uint16_t framelen, signed rssi);
+struct managementInfo parse_probe(uint8_t *frame, uint16_t framelen, signed rssi);
 
-int register_beacon(beaconinfo beacon);
-int register_client(clientinfo ci);
-int register_probe(probeinfo pi);
+int register_beacon(managementInfo beacon);
+int register_client(dataInfo ci);
+int register_probe(managementInfo pi);
 
-void print_beacon(beaconinfo beacon);
-void print_client(clientinfo ci);
-void print_probe(probeinfo ci);
+void print_beacon(managementInfo beacon);
+void print_client(dataInfo ci);
+void print_probe(managementInfo ci);
 
 void print_pkt_header(uint8_t *buf, uint16_t len, char *pkt_type);
 

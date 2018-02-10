@@ -11,30 +11,23 @@ uint8_t broadcast1[3] = { 0x01, 0x00, 0x5e };
 uint8_t broadcast2[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 uint8_t broadcast3[3] = { 0x33, 0x33, 0x00 };
 
-struct beaconinfo {
+// 6 + 33 + 1 + 1 + 1 + 1 = 43
+struct managementInfo {
   uint8_t   mac_addr[ETH_MAC_LEN];
   char      ssid[33];
-  int       ssid_len;
-  int       channel;
-  int       err;
+  uint8_t   ssid_len;
+  uint8_t   channel;
+  uint8_t   err;
   signed    rssi;
 };
 
-struct probeinfo {
-  uint8_t   mac_addr[ETH_MAC_LEN];
-  char      ssid[33];
-  int       ssid_len;
-  int       channel;
-  int       err;
-  signed    rssi;
-};
-
-struct clientinfo {
+// 6 + 6 + 6 + 1 + 1 + 1 = 21
+struct dataInfo {
   uint8_t   bssid[ETH_MAC_LEN];
   uint8_t   station[ETH_MAC_LEN];
   uint8_t   ap[ETH_MAC_LEN];
-  int       channel;
-  int       err;
+  uint8_t   channel;
+  uint8_t   err;
   signed    rssi;
 };
 
